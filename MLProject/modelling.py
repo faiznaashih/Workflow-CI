@@ -35,6 +35,10 @@ mlflow.set_tracking_uri(
 )
 mlflow.set_experiment("Workflow-CI-Training")
 
+# Pastikan tidak ada run yang aktif sebelumnya
+if mlflow.active_run():
+    mlflow.end_run()
+
 # ─────────────────────────────────────────────────────────────
 # LOAD DATA
 # ─────────────────────────────────────────────────────────────
