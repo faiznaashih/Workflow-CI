@@ -62,3 +62,4 @@ jobs:
             MLProject/roc_curve.png
             MLProject/classification_report.txt
           push: true
+          token: ${{ secrets.PAT_TOKEN }}
