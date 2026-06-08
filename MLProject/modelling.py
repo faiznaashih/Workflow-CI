@@ -2,14 +2,10 @@
 modelling.py
 ============
 Script training model untuk MLflow Project.
-Digunakan oleh GitHub Actions CI untuk re-training otomatis.
-
 Author  : M. Faiz Naashih Rozaq
-Dataset : Telco Customer Churn (preprocessed)
 """
 
 import os
-import json
 import mlflow
 import mlflow.sklearn
 import pandas as pd
@@ -24,18 +20,15 @@ from sklearn.metrics import (
 )
 
 # ─────────────────────────────────────────────────────────────
-# KONFIGURASI
+# KONFIGURASI - gunakan env variable dari GitHub Actions
 # ─────────────────────────────────────────────────────────────
 
-DAGSHUB_USERNAME = "faiznaashih"
-DAGSHUB_REPO     = "Eksperimen_SML_Faiz-Naashih"
+# MLFLOW_TRACKING_URI, USERNAME, PASSWORD sudah di-set via env
+# oleh GitHub Actions, tidak perlu set manual di sini
 
-mlflow.set_tracking_uri(
-    f"https://dagshub.com/{DAGSHUB_USERNAME}/{DAGSHUB_REPO}.mlflow"
-)
 mlflow.set_experiment("Workflow-CI-Training")
 
-# Pastikan tidak ada run yang aktif sebelumnya
+# End active run jika ada (dari MLflow Project runner)
 if mlflow.active_run():
     mlflow.end_run()
 
@@ -53,13 +46,12 @@ y_test  = pd.read_csv(os.path.join(DATA_DIR, "y_test.csv")).squeeze()
 print(f"[LOAD] X_train: {X_train.shape} | X_test: {X_test.shape}")
 
 # ─────────────────────────────────────────────────────────────
-# TRAINING + MANUAL LOGGING
+# TRAINING + LOGGING
 # ─────────────────────────────────────────────────────────────
 
 with mlflow.start_run(run_name="CI-RandomForest") as run:
     print(f"[MLflow] Run ID: {run.info.run_id}")
 
-    # Parameters
     params = {
         "n_estimators": 200,
         "max_depth": 10,
@@ -68,15 +60,12 @@ with mlflow.start_run(run_name="CI-RandomForest") as run:
     }
     mlflow.log_params(params)
 
-    # Train
     model = RandomForestClassifier(**params, n_jobs=-1)
     model.fit(X_train, y_train)
 
-    # Predict
     y_pred      = model.predict(X_test)
     y_pred_prob = model.predict_proba(X_test)[:, 1]
 
-    # Metrics
     acc       = accuracy_score(y_test, y_pred)
     precision = precision_score(y_test, y_pred)
     recall    = recall_score(y_test, y_pred)
@@ -89,7 +78,7 @@ with mlflow.start_run(run_name="CI-RandomForest") as run:
     mlflow.log_metric("f1_score", f1)
     mlflow.log_metric("roc_auc", auc)
 
-    # Artefak 1: Confusion Matrix
+    # Confusion Matrix
     cm = confusion_matrix(y_test, y_pred)
     fig, ax = plt.subplots(figsize=(6, 5))
     ConfusionMatrixDisplay(confusion_matrix=cm,
@@ -101,7 +90,7 @@ with mlflow.start_run(run_name="CI-RandomForest") as run:
     plt.close()
     mlflow.log_artifact("confusion_matrix.png")
 
-    # Artefak 2: ROC Curve
+    # ROC Curve
     fpr, tpr, _ = roc_curve(y_test, y_pred_prob)
     fig, ax = plt.subplots(figsize=(6, 5))
     ax.plot(fpr, tpr, color='#2980b9', lw=2,
@@ -116,7 +105,7 @@ with mlflow.start_run(run_name="CI-RandomForest") as run:
     plt.close()
     mlflow.log_artifact("roc_curve.png")
 
-    # Artefak 3: Classification Report
+    # Classification Report
     report = classification_report(y_test, y_pred,
                                    target_names=['No Churn', 'Churn'])
     with open("classification_report.txt", "w") as f:

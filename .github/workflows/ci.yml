@@ -37,7 +37,7 @@ jobs:
           MLFLOW_TRACKING_URI: ${{ secrets.MLFLOW_TRACKING_URI }}
         run: |
           cd MLProject
-          mlflow run . --env-manager=local
+          mlflow run . --env-manager=local --experiment-name="Workflow-CI-Training"
 
       # 5. Simpan artefak ke GitHub
       - name: Upload Artifacts to GitHub
