@@ -52,14 +52,11 @@ jobs:
 
       # 6. Commit artefak ke repo
       - name: Commit Artifacts
-        uses: EndBug/add-and-commit@v9
-        with:
-          author_name: 'GitHub Actions'
-          author_email: 'actions@github.com'
-          message: '[CI] Auto-training artifacts - Run #${{ github.run_number }}'
-          add: |
-            MLProject/confusion_matrix.png
-            MLProject/roc_curve.png
-            MLProject/classification_report.txt
-          push: true
-          token: ${{ secrets.PAT_TOKEN }}
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add MLProject/confusion_matrix.png MLProject/roc_curve.png MLProject/classification_report.txt || true
+          git commit -m "[CI] Auto-training artifacts - Run #${{ github.run_number }}" || true
+          git push
+        env:
+          GITHUB_TOKEN: ${{ secrets.PAT_TOKEN }}
